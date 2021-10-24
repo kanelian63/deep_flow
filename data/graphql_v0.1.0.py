@@ -87,6 +87,25 @@ def get_starredAt(repo_groups):
     return starred
 
 
+def get_resampled_df(starred):
+    # pandas dataframe resample 함수를 이용하여 월별 혹은 주별 데이터 수 적립
+    df2 = pd.DataFrame(index=range(0, len(starred)), columns=['starredAt', 'starredSeq'])
+
+    for starred_idx, at in enumerate(starred):
+        df2.loc[starred_idx, 'starredAt'] = datetime.fromisoformat(at['starredAt'].replace("Z", ""))
+        df2.loc[starred_idx, 'starredSeq'] = 1
+
+    df_resample = df2.sort_values('starredAt').reset_index(drop=True)
+    df_resample = df_resample.set_index('starredAt')
+    df_resample_1W = df_resample.resample(rule='1W').sum()
+
+    df_resample_1W['starredStacked'] = df_resample_1W['starredSeq'].cumsum()
+
+    return df_resample_1W
+
+
+
+
 if __name__=="__main__":
 
     print(__name__)
@@ -100,17 +119,7 @@ if __name__=="__main__":
     # get starredAt
     starred = get_starredAt(repo_groups)
 
-
-# pandas dataframe resample 함수를 이용하여 월별 혹은 주별 데이터 수 적립
-df2 = pd.DataFrame(index=range(0, len(starred)), columns=['starredAt', 'starredSeq'])
-
-for starred_idx, at in enumerate(starred):
-    df2.loc[starred_idx, 'starredAt'] = datetime.fromisoformat(at['starredAt'].replace("Z", ""))
-    df2.loc[starred_idx, 'starredSeq'] = 1
-
-df_resample = df2.sort_values('starredAt').reset_index(drop=True)
-df_resample = df_resample.set_index('starredAt')
-df_resample_1W = df_resample.resample(rule='1W').sum()
+    df_resample_1W = get_resampled_df(starred)
 
 # 1W 단위로 resmapling한 df에 stacked 컬럼 추가
 
